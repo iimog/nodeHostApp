@@ -1,11 +1,11 @@
 const nativeMessage = require('chrome-native-messaging');
 const spawn = require('cross-spawn');
 
-/*
+
 (async function test() {
   console.log(await handleMessage({command: 'list-entries'}));
 })();
-*/
+
 
 process.stdin
   .pipe(new nativeMessage.Input())
@@ -99,15 +99,22 @@ async function listEntries() {
   return new Promise((resolve) => {
 
     try {
-      const pass = spawn('find', [
+      let findArgs = [
         '-L',
         '.',
-        '-not', '-path', '\\*/.\\*',
+        '-not', '-path', '*/.*',
         '-type', 'd',
         '-or',
-        '-not', '-path', '\\*/.\\*',
-        '-type', 'f', '-iname', '\\*.gpg',
-      ], {
+        '-not', '-path', '*/.*',
+        '-type', 'f', '-iname', '*.gpg',
+      ];
+
+      if (process.platform === 'win32') {
+        // windows shell needs additional escaping of wildcards
+        findArgs = findArgs.map(arg => arg.replace(/\*/g, '\\*'));
+      }
+
+      const pass = spawn('find', findArgs, {
         cwd: process.env.PASSWORD_STORE_DIR || `${process.env.HOME || '~'}/.password-store`,
       });
       let stdout = [], stderr = [];
